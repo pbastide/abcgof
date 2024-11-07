@@ -339,7 +339,7 @@ get_lof_freq <- function(pods, pnew,
       foreach::registerDoSEQ()
     }
     iboot <- 0
-    res_boot <- foreach::foreach(iboot = 1:nboot, .export = c("score", "score_fun", "k", "k_range", "n.post", "n.calib")) %dopar% {
+    res_boot <- foreach::foreach(iboot = 1:nboot) %dopar% {
       get_pvals_post(pnew, data.ref.posterior, score, score_fun, k, k_range, n.post, n.calib)
     }
     # merge and summarise results
