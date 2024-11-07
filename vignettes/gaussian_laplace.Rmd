@@ -1,0 +1,201 @@
+---
+title: "Tutorial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Toy Laplace - Gaussian Example
+
+In this tutorial, we use a toy "Laplace - Gaussian" dataset (`gaussian_laplace`),
+that is embedded in the `abcgof` package.
+
+```{r, label="data"}
+library(abcgof)
+data("gaussian_laplace")
+attach(gaussian_laplace)
+set.seed(1289)
+```
+
+We assume that the reference table is drawn using the following model $m_0$,
+that uses a Laplace distribution:
+\begin{equation*}
+   \text{$m_0$: }
+      \left\{
+   \begin{aligned}
+   \theta &= (\mu, \sigma); \\
+   \mu &\sim \mbox{Uniform}(-5,5); \\
+   \sigma &\sim \mbox{Uniform}(1,4);\\
+    z_i &\overset{iid}{\sim} \mbox{Laplace}(\mu,\sigma/\sqrt{2}) \mbox{ for } 1 \leq i \leq d;\\
+    y &= \text{L-moments}(z; m);
+    \end{aligned}
+    \right.
+\end{equation*}
+where the simulated vectors $y$ has dimension $d=350$ and is not observed directly,
+but instead summarized using the first $m = 20$
+sample L-moments ratios using function `salmu` from package `lmom`.
+
+The simulated parameters and reference table are stored in the `gaussian_laplace`
+object, along with the simulation function.
+The reference table has `r nrow(dataset_laplace$param)` rows.
+
+```{r, label="laplace"}
+sim_params <- dataset_laplace$param
+sumstats <- dataset_laplace$sim
+sim_function <- dataset_laplace$sim.fun
+head(sim_params)
+head(sumstats)
+sim_function
+```
+
+We then assume that we have several observed vector of statistics, that come
+from an alternative model $m_1$ that uses a Gaussian model instead:
+\begin{equation*}
+   \text{$m_1$: }
+   \left\{
+   \begin{aligned}
+   \theta &= (\mu, \sigma); \\
+    \mu &\sim \mbox{Uniform}(-5,5); \\
+   \sigma &\sim \mbox{Uniform}(1,4);\\
+    z_i &\overset{iid}{\sim} \mbox{Normal}(\mu,\sigma^2) \mbox{ for } 1 \leq i \leq d;\\
+    y &= \text{L-moments}(z; m),
+    \end{aligned}
+    \right.
+\end{equation*}
+with $d=350$ and $m=20$ as above.
+
+We take as observed values the first 10 line of the `dataset_gaussian` dataset.
+
+```{r, label="gaussian"}
+y_obs <- dataset_gaussian$sim[1:10, ]
+```
+
+Note that both models have conditional mean $\mu$ and standard deviations $\sigma$
+for each raw data $z_i$, $1 \leq i \leq d$.
+We can use a PCA to visualize the reference statistics and the observed datasets.
+
+```{r, label="plot", fig.show='hold', fig.height=6, fig.width=6}
+trainall <- rbind(sumstats, y_obs)
+ind <- c(rep(1, nrow(sumstats)), rep(2, nrow(y_obs)))
+res.pca <- stats::prcomp(trainall)
+plot(res.pca$x[, c(1,2)], col = c("black", "#D55E00")[ind], pch = "*")
+```
+
+Points from the reference table are in black, while observed points are in orange.
+As the Laplace model has heavier tails than the Gaussian model, rejecting
+the Laplace model with a Gaussian observation can be difficult, which is why
+we selected this configuration.
+Visual inspection of the first two PC axis does not reveal that observed orange
+points would be "outliers" compared to simulated black points.
+
+## Pre-Inference Prior GoF Test
+
+We can first perform a Prior Goodness of fit test, based on whole generated
+dataset in `sumstat`. 
+This test checks the null hypothesis that the observation is drawn from the 
+prior predictive distribution of model $m_0$ used to generate the reference table.
+Rejecting the test means that we reject the null hypothesis that the data was 
+drawn from the prior predictive $m_0$, i.e. that model $m_0$ fails to correctly
+account for the observation.
+
+```{r}
+resgfit <- gfit(y_obs, sumstats)
+resgfit
+```
+
+By default, the function sets aside $100$ points from the reference table for
+calibration, and use the remaining points to compute the outlier score.
+The default outlier score is the "max-LOF" score for k varying between 2 and 20.
+
+Here, we can see that we clearly reject all observation, except for number 6,
+that has an upper confidence interval value above the $0.05$ threshold.
+As observations are indeed from a different model than the null model, so this
+result is expected.
+
+By default, confidence intervals are based on an asymptotic criterion, that is
+fast to compute, but can be inaccurate.
+To get a better idea of the uncertainty of the estimation, we can use bootstrap
+replicates: instead of drawing calibration points only once from the reference table,
+we repeat this operation a given number of times, and look at the distribution of
+p-values.
+
+```{r}
+resgfitboot <- gfit(y_obs[6, ], sumstats,
+                    nboot = 10,          ## For speed, only 10 replicates, but this should be increased.
+                    ncores = 1)          ## The number of cores for parallel computation can be increased.
+resgfitboot
+```
+
+Here, it confirms the result that observation 6 is not rejected by the prior GoF test.
+We will further analyze this observation using the post-inference holdout GoF test.
+
+
+## Post-Inference Holdout GoF Test
+
+The prior GoF tests the null hypothesis that the data comes from the prior
+distribution of model $m_0$, which is a broad assumption.
+In a frequentist setting, we might want instead to test
+whether the true distribution that generated the data is equal to the
+optimized likelihood of the model, inferred in the region of the observation.
+This is the goal of the post-inference GoF test.
+To avoid the double use of the data,
+we resort to an holdout version of the test:
+we assume that we have two independent observed datasets, that were drawn from the
+same (unknown) distribution, and we use the first replicate to learn the posterior,
+and the second replicate to perform the test.
+
+In our toy example, as we know the true distribution of observation 6, we can
+easily generate a replicate dataset, by calling the Gaussian simulation function
+on the same parameters:
+```{r}
+y_obs_rep <- dataset_gaussian$sim.fun(dataset_gaussian$param[1:10, ])
+```
+
+
+Here, the posterior is learned with a simple rejection ABC algorithm,
+by selecting the rows of the reference table that are the closest (for the Euclidean distance)
+to the first observation, and then by re-simulating points from model $m_0$
+using the parameters associated to the selected rows of the reference table.
+
+```{r}
+reshpgfit <- hpgfit(y_obs[6, ],                      ## observed dataset
+                    y_obs_rep[6, ],                  ## replicate of the observed dataset
+                    sim_params, sumstats,            ## simulated parameters and reference table from m_0
+                    sim.fun = sim_function,          ## function to re-simulate from m_0 given parameters
+                    method = "rejection", eps = 0.1) ## rejection method with epsilon = 10%
+reshpgfit
+```
+Here, the post-inference test does reject the null assumption that the true
+distribution of the data comes from model $m_0$.
+Note that, for the sake of speed in this demonstration, we used a reference table
+with only $1000$ particles, localized at $10\%$.
+In true applications, for the post-inference test, we should aim at many more
+simulated particles ($10\,000$ or higher, depending on the complexity of the model),
+and well better localized ($5\%$ or lower).
+
+As in the prior GoF test, we can use a bootstrap procedure instead of the
+asymptotic method to get better estimates of the uncertainty of the estimated
+p-value. This works by re-sampling the calibration points among the set of
+selected rows of the reference table.
+
+```{r}
+reshpgfitboot <- hpgfit(y_obs[6, ],                      ## observed dataset
+                        y_obs_rep[6, ],                  ## replicate of the observed dataset
+                        sim_params, sumstats,            ## simulated parameters and reference table from m_0
+                        sim.fun = sim_function,          ## function to re-simulate from m_0 given parameters
+                        method = "rejection", eps = 0.1, ## rejection method with epsilon = 10%
+                        nboot = 50,                      ## For speed, only 50 replicates, but this should be increased.
+                        ncores = 1)                      ## The number of cores for parallel computation can be increased.
+reshpgfitboot
+```
+The conclusion is similar, although the uncertainty is larger, due to the small
+number of particles.

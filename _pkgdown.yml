@@ -1,0 +1,38 @@
+url: https://pbastide.github.io/abcgof/
+template:
+  bootstrap: 5
+navbar:
+  left:
+  - text: Tutorial
+    href: articles/gaussian_laplace.html
+  - text: Reference
+    href: reference/index.html
+reference:
+- title: Prior GoF
+  desc: Pre-inference prior GoF tests.
+  contents:
+  - gfit
+  - gof.fit
+- title: Holdout GoF
+  desc: Post-inference holdout GoF tests.
+  contents:
+  - hpgfit
+  - gof.fit.holdout
+- title: Example Datasets
+  contents: gaussian_laplace
+- title: Utility functions
+  contents:
+  - compute_power
+  - compute_power_sd
+  - compute_pval_sd
+  - norm_stats
+- title: Freq GoF
+  desc: Post-inference holdout GoF tests with pre-computed replicates.
+  contents:
+  - freqgfit
+  - gof.fit.freq
+- title: Localized GoF
+  desc: Pre-inference prio GoF tests with localization.
+  contents:
+  - postgfit
+  - gof.fit.post

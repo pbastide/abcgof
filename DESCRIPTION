@@ -1,0 +1,41 @@
+Package: abcgof
+Title: Goodness of fit for ABC
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Paul", "Bastide", , "paul.bastide@cnrs.fr", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-8084-9893")),
+    person("Arnaud", "Estoup", , , role = c("aut"), comment = c(ORCID = "0000-0002-4357-6144")),
+    person("Guillaume", "Le Mailloux", , , role = c("aut")),
+    person("Jean-Michel", "Marin", , , role = c("aut"), comment = c(ORCID = "0000-0001-7451-9719"))
+           )
+Description: Goodness of fit for models with intractable likelihood,
+             using Approximate Bayesian Computation (ABC) or 
+             Simulation-Based Inference (SBI) techniques.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+LinkingTo: 
+    Rcpp
+Imports: 
+    Rcpp,
+    parallel,
+    dbscan,
+    foreach,
+    doParallel,
+    glmnet,
+    HDInterval
+Suggests: 
+    knitr,
+    parallelDist,
+    rmarkdown,
+    spelling,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: 
+    R (>= 2.10)
+LazyData: true
+VignetteBuilder: knitr
+URL: https://pbastide.github.io/abcgof/
+BugReports: https://pbastide.github.io/abcgof/issues
+Language: en-US
