@@ -28,6 +28,8 @@ Imports:
 Suggests: 
     knitr,
     parallelDist,
+    lmom,
+    VGAM,
     rmarkdown,
     spelling,
     testthat (>= 3.0.0)

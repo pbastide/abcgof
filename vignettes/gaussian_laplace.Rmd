@@ -5,6 +5,8 @@ vignette: >
   %\VignetteIndexEntry{Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{lmom}
+  %\VignetteDepends{VGAM}
 ---
 
 ```{r, include = FALSE}
