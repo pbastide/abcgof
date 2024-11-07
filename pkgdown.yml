@@ -1,0 +1,9 @@
+pandoc: 3.1.11
+pkgdown: 2.1.1
+pkgdown_sha: ~
+articles:
+  gaussian_laplace: gaussian_laplace.html
+last_built: 2024-11-07T16:11Z
+urls:
+  reference: https://pbastide.github.io/abcgof/reference
+  article: https://pbastide.github.io/abcgof/articles
